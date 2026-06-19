@@ -4,6 +4,7 @@ import { extractSelection } from '~/lib/extractor';
 import { writeClipboard } from '~/lib/clipboard';
 import { showToast } from '~/lib/toast';
 import { CHAT_READY_PRESET } from '~/lib/presets';
+import { formatClip } from '~/lib/frontmatter';
 
 export default defineBackground(() => {
   registerContextMenus();
@@ -18,7 +19,8 @@ export default defineBackground(() => {
         await showToast(tab.id, 'Select some text first.');
         return;
       }
-      await writeClipboard(clip.markdown);
+      const formatted = formatClip(clip, CHAT_READY_PRESET);
+      await writeClipboard(formatted);
       await showToast(tab.id, 'Copied!');
     } catch (err) {
       console.error('[webtomd] selection workflow failed', err);

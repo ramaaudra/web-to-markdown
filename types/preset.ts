@@ -17,5 +17,5 @@ export interface Preset {
   readonly imagePolicy: ImagePolicy;
   readonly linkPolicy: LinkPolicy;
   /** Frontmatter is on by default for all v1 presets. */
-  readonly frontmatter: true;
+  readonly frontmatter: boolean;
 }

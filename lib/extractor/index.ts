@@ -113,6 +113,7 @@ export async function extractSelection(
     url,
     title: tab.title ?? url,
     markdown: htmlToMarkdown(result.html, preset),
+    fetchedAt: new Date().toISOString(),
   };
 }
 

@@ -30,3 +30,7 @@ Thumbs.db
 
 # Built extension archives (Chrome Web Store uploads)
 *.zip
+
+# Agent Customizations
+.agents/
+skills-lock.json

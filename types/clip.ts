@@ -10,6 +10,8 @@ export interface SelectionClip {
   readonly title: string;
   /** The selected HTML fragment converted to Markdown. */
   readonly markdown: string;
+  /** Wall-clock timestamp of when the clip was produced. */
+  readonly fetchedAt: string;
 }
 
 /** A Web Clip produced from the page's main content. */
