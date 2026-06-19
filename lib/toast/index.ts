@@ -18,7 +18,7 @@ interface ShowToastOptions {
 export async function showToast(
   tabId: number,
   message: string,
-  options: ShowToastOptions = {},
+  options: ShowToastOptions = {}
 ): Promise<void> {
   const durationMs = options.durationMs ?? 2000;
   await chrome.scripting.executeScript({
@@ -52,9 +52,7 @@ function injectToast(message: string, durationMs: number): void {
 }
 
 function ensureHost(): ToastHost {
-  const existing = document.getElementById(
-    TOAST_HOST_ID,
-  ) as ToastHost | null;
+  const existing = document.getElementById(TOAST_HOST_ID) as ToastHost | null;
   if (existing) return existing;
 
   const host = document.createElement('div') as ToastHost;

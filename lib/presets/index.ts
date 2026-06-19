@@ -15,7 +15,8 @@ export const PRESETS: Record<PresetId, Preset> = {
   reference: {
     id: 'reference',
     label: 'Reference',
-    description: 'Strip images, keep inline links. Lets the AI cite the source.',
+    description:
+      'Strip images, keep inline links. Lets the AI cite the source.',
     imagePolicy: 'strip',
     linkPolicy: 'keep-inline',
     frontmatter: true,

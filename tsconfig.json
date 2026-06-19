@@ -21,11 +21,6 @@
     },
     "baseUrl": "."
   },
-  "include": [
-    "entrypoints/**/*",
-    "lib/**/*",
-    "types/**/*",
-    "tests/**/*"
-  ],
+  "include": ["entrypoints/**/*", "lib/**/*", "types/**/*", "tests/**/*"],
   "exclude": ["node_modules", ".output", ".wxt", "dist"]
 }

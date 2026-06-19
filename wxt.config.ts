@@ -12,7 +12,13 @@ export default defineConfig({
     short_name: 'WebToMD',
     description:
       'Extract the main content of any webpage as token-efficient Markdown — ready to paste into your AI agent.',
-    permissions: ['activeTab', 'scripting', 'contextMenus', 'storage', 'clipboardWrite'],
+    permissions: [
+      'activeTab',
+      'scripting',
+      'contextMenus',
+      'storage',
+      'clipboardWrite',
+    ],
     action: {
       default_title: 'Copy page as Markdown',
     },

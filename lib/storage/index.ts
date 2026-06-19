@@ -1,4 +1,4 @@
-import type { PresetId } from "~/types/preset";
+import type { PresetId } from '~/types/preset';
 
 export interface Settings {
   lastUsedPreset: PresetId;
@@ -7,12 +7,12 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  lastUsedPreset: "chat-ready",
+  lastUsedPreset: 'chat-ready',
   onboardingComplete: false,
   frontmatterEnabled: true,
 };
 
-const STORAGE_KEY = "settings";
+const STORAGE_KEY = 'settings';
 
 /**
  * Retrieves the stored user settings from chrome.storage.sync.
@@ -20,7 +20,7 @@ const STORAGE_KEY = "settings";
  */
 export async function getSettings(): Promise<Settings> {
   if (
-    typeof chrome === "undefined" ||
+    typeof chrome === 'undefined' ||
     !chrome.storage ||
     !chrome.storage.sync
   ) {
@@ -43,7 +43,7 @@ export async function getSettings(): Promise<Settings> {
         data.frontmatterEnabled ?? DEFAULT_SETTINGS.frontmatterEnabled,
     };
   } catch (err) {
-    console.error("[webtomd] failed to get settings from storage:", err);
+    console.error('[webtomd] failed to get settings from storage:', err);
     return { ...DEFAULT_SETTINGS };
   }
 }
@@ -54,7 +54,7 @@ export async function getSettings(): Promise<Settings> {
  */
 export async function setSettings(partial: Partial<Settings>): Promise<void> {
   if (
-    typeof chrome === "undefined" ||
+    typeof chrome === 'undefined' ||
     !chrome.storage ||
     !chrome.storage.sync
   ) {
@@ -70,6 +70,6 @@ export async function setSettings(partial: Partial<Settings>): Promise<void> {
 
     await chrome.storage.sync.set({ [STORAGE_KEY]: updated });
   } catch (err) {
-    console.error("[webtomd] failed to set settings in storage:", err);
+    console.error('[webtomd] failed to set settings in storage:', err);
   }
 }
