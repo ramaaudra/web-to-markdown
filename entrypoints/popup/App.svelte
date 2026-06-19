@@ -74,7 +74,7 @@
       const results = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         files: ['/content-scripts/extract-page.js'],
-        world: 'MAIN',
+        world: 'ISOLATED',
       });
       rawArticle = results?.[0]?.result;
       if (!rawArticle || !rawArticle.content) {

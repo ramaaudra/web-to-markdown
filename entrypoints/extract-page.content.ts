@@ -15,7 +15,7 @@ type ReadabilityArticle = NonNullable<ReturnType<Readability['parse']>>;
 
 export default defineContentScript({
   registration: 'runtime',
-  world: 'MAIN',
+  world: 'ISOLATED',
   main(): ReadabilityArticle | null {
     const documentClone = document.cloneNode(true) as Document;
     const reader = new Readability(documentClone, {

@@ -12,7 +12,11 @@ export async function writeClipboard(text: string): Promise<void> {
     await navigator.clipboard.writeText(text);
     return;
   }
-  fallbackCopy(text);
+  if (typeof document !== 'undefined') {
+    fallbackCopy(text);
+    return;
+  }
+  throw new Error('Clipboard API is not available in service worker context');
 }
 
 function fallbackCopy(text: string): void {

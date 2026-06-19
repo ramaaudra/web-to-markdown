@@ -32,7 +32,7 @@
   }
 </script>
 
-<div class="tabs-container">
+<div class="tabs-container" role="tablist" aria-label="Web clip presets">
   <!-- Sliding active background pill -->
   <div class="active-pill" class:pos-0={activeId === 'chat-ready'} class:pos-1={activeId === 'reference'} class:pos-2={activeId === 'archive'}></div>
 
@@ -43,6 +43,8 @@
       class:active={activeId === tab.id}
       onclick={() => selectTab(tab.id)}
       title={tab.description}
+      role="tab"
+      aria-selected={activeId === tab.id}
     >
       <span class="label">{tab.label}</span>
     </button>

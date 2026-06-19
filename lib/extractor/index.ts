@@ -47,7 +47,7 @@ export async function extractPage(
   const results = await chrome.scripting.executeScript({
     target: { tabId },
     files: [EXTRACT_PAGE_SCRIPT],
-    world: 'MAIN',
+    world: 'ISOLATED',
   });
 
   const article = results?.[0]?.result as RawArticle | null | undefined;
@@ -99,7 +99,7 @@ export async function extractSelection(
       container.appendChild(range.cloneContents());
       return { html: container.innerHTML };
     },
-    world: 'MAIN',
+    world: 'ISOLATED',
   });
 
   const result = results?.[0]?.result;
