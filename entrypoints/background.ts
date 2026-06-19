@@ -3,7 +3,7 @@ import {
   registerContextMenus,
   COPY_SELECTION_MENU_ID,
 } from '~/lib/context-menu';
-import { extractSelection } from '~/lib/extractor';
+import { extractSelection, toClip } from '~/lib/extractor';
 import { writeClipboard } from '~/lib/clipboard';
 import { showToast } from '~/lib/toast';
 import { PRESETS } from '~/lib/presets';
@@ -21,11 +21,12 @@ export default defineBackground(() => {
       const settings = await getSettings();
       const preset = PRESETS[settings.lastUsedPreset] || PRESETS['chat-ready'];
 
-      const clip = await extractSelection(tab.id, preset);
-      if (!clip) {
+      const rawSelection = await extractSelection(tab.id);
+      if (!rawSelection) {
         await showToast(tab.id, 'Select some text first.');
         return;
       }
+      const clip = toClip(rawSelection, preset);
       const formatted = formatClip(clip, preset, {
         frontmatterEnabled: settings.frontmatterEnabled,
       });

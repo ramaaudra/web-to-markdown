@@ -1,23 +1,21 @@
 // lib/extractor — wraps @mozilla/readability + turndown to produce Web Clips.
 //
-// Two entry points:
-//   - extractPage(tabId)  → PageClip (Readability + Turndown for the whole page)
-//   - extractSelection(tabId) → SelectionClip (Turndown on selection HTML only)
+// Chrome integration (impure):
+//   - extractPage(tabId)       → RawPageData (Readability on the active tab)
+//   - extractSelection(tabId)  → RawSelectionData | null (selection HTML)
 //
-// The popup calls `extractPage`; the background service worker calls
-// `extractSelection` from the context-menu click handler. Both use Turndown
-// with a Preset policy applied (Slice 4 introduces the Preset registry; Slice
-// 1 ships a hardcoded Chat-ready policy).
+// Pure formatting:
+//   - toClip(data, preset)     → WebClip (Turndown + metadata envelope)
 //
-// `htmlToMarkdown(html, preset)` is the pure, testable core: it takes HTML
-// and a Preset and returns Markdown. Slice 1's test seam.
+// The popup calls `extractPage` then `toClip`; the background service worker
+// calls `extractSelection` then `toClip` from the context-menu click handler.
 
 import TurndownService from 'turndown';
 import { gfm } from 'turndown-plugin-gfm';
-import type { PageClip, SelectionClip } from '~/types/clip';
+import type { PageClip, SelectionClip, WebClip } from '~/types/clip';
 import type { Preset } from '~/types/preset';
 
-export type { PageClip, SelectionClip };
+export type { PageClip, SelectionClip, WebClip };
 
 /**
  * Path to the runtime-registered MAIN-world content script that runs Readability
@@ -29,21 +27,41 @@ const EXTRACT_PAGE_SCRIPT = '/content-scripts/extract-page.js' as const;
 interface RawArticle {
   title: string | null;
   content: string | null;
+  textContent: string | null;
   byline: string | null;
   siteName: string | null;
   publishedTime: string | null;
 }
 
+export interface RawPageData {
+  readonly kind: 'page';
+  readonly url: string;
+  readonly title: string;
+  readonly content: string;
+  readonly siteName?: string;
+  readonly author?: string;
+  readonly publishedAt?: string;
+}
+
+export interface RawSelectionData {
+  readonly kind: 'selection';
+  readonly url: string;
+  readonly title: string;
+  readonly html: string;
+}
+
 /**
- * Extract the active tab's main content as a PageClip.
- *
- * Runs the MAIN-world Readability script, then converts the resulting HTML
- * to Markdown with the supplied Preset policy applied.
+ * Extract raw page data from the active tab.
+ * Validates the URL first, runs the extraction script, and enforces text length requirements.
  */
-export async function extractPage(
-  tabId: number,
-  preset: Preset
-): Promise<PageClip> {
+export async function extractPage(tabId: number): Promise<RawPageData> {
+  const tab = await chrome.tabs.get(tabId);
+  const url = tab.url ?? '';
+
+  if (isUnsupportedUrl(url)) {
+    throw new Error("This page type isn't supported.");
+  }
+
   const results = await chrome.scripting.executeScript({
     target: { tabId },
     files: [EXTRACT_PAGE_SCRIPT],
@@ -51,12 +69,16 @@ export async function extractPage(
   });
 
   const article = results?.[0]?.result as RawArticle | null | undefined;
-  if (!article || !article.content) {
-    throw new Error('Readability returned no content');
+  if (
+    !article ||
+    !article.content ||
+    !article.textContent ||
+    article.textContent.trim().length < 100
+  ) {
+    throw new Error(
+      "Couldn't extract main content. The page might use heavy JavaScript rendering. Try the selection option instead."
+    );
   }
-
-  const tab = await chrome.tabs.get(tabId);
-  const url = tab.url ?? '';
 
   return {
     kind: 'page',
@@ -65,8 +87,7 @@ export async function extractPage(
     siteName: article.siteName ?? undefined,
     author: article.byline ?? undefined,
     publishedAt: article.publishedTime ?? undefined,
-    markdown: htmlToMarkdown(article.content, preset),
-    fetchedAt: new Date().toISOString(),
+    content: article.content,
   };
 }
 
@@ -75,16 +96,12 @@ interface SelectionResult {
 }
 
 /**
- * Extract the user's current text selection on the active tab as a SelectionClip.
- *
- * Reads the selection's HTML fragment directly (no Readability — the user has
- * already chosen the relevant content) and converts to Markdown with the
- * supplied Preset policy applied.
+ * Extract raw text selection HTML from the active tab.
+ * Returns null if no valid selection is found.
  */
 export async function extractSelection(
-  tabId: number,
-  preset: Preset
-): Promise<SelectionClip | null> {
+  tabId: number
+): Promise<RawSelectionData | null> {
   const results = await chrome.scripting.executeScript<
     [],
     SelectionResult | null
@@ -112,17 +129,49 @@ export async function extractSelection(
     kind: 'selection',
     url,
     title: tab.title ?? url,
-    markdown: htmlToMarkdown(result.html, preset),
-    fetchedAt: new Date().toISOString(),
+    html: result.html,
   };
 }
 
 /**
- * Convert HTML to Markdown with a Preset's image/link policy applied.
- *
- * Pure function — the primary test seam for Slice 1 and Slice 4.
+ * Pure function to format raw page or selection data into a standardized WebClip.
  */
-export function htmlToMarkdown(html: string, preset: Preset): string {
+export function toClip(
+  data: RawPageData | RawSelectionData,
+  preset: Preset
+): WebClip {
+  const markdown = htmlToMarkdown(
+    data.kind === 'page' ? data.content : data.html,
+    preset
+  );
+
+  const fetchedAt = new Date().toISOString();
+
+  return data.kind === 'page'
+    ? {
+        kind: 'page',
+        url: data.url,
+        title: data.title,
+        siteName: data.siteName,
+        author: data.author,
+        publishedAt: data.publishedAt,
+        markdown,
+        fetchedAt,
+      }
+    : {
+        kind: 'selection',
+        url: data.url,
+        title: data.title,
+        markdown,
+        fetchedAt,
+      };
+}
+
+/**
+ * Convert HTML to Markdown with a Preset's image/link policy applied.
+ * Pure internal function.
+ */
+function htmlToMarkdown(html: string, preset: Preset): string {
   const td = new TurndownService({
     headingStyle: 'atx',
     codeBlockStyle: 'fenced',
@@ -150,8 +199,9 @@ export function htmlToMarkdown(html: string, preset: Preset): string {
 
 /**
  * Detects if a URL is unsupported for extraction (chrome:, edge:, file:, about:, or PDFs).
+ * Pure internal function.
  */
-export function isUnsupportedUrl(url: string): boolean {
+function isUnsupportedUrl(url: string): boolean {
   if (!url) return false;
   const lowerUrl = url.toLowerCase().trim();
 

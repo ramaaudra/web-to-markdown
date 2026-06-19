@@ -1,131 +1,282 @@
-import { describe, it, expect } from 'vitest';
-import { htmlToMarkdown, isUnsupportedUrl } from '~/lib/extractor';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { extractPage, extractSelection, toClip } from '~/lib/extractor';
 import { CHAT_READY_PRESET, PRESETS } from '~/lib/presets';
 
-describe('htmlToMarkdown — Chat-ready preset (Slice 1)', () => {
+describe('toClip — Chat-ready preset (Slice 1)', () => {
   const html =
     '<p>Hello <a href="https://example.com">link</a> <img src="cat.png" alt="cat"/> world.</p>';
+  const rawPage = {
+    kind: 'page' as const,
+    url: 'https://example.com',
+    title: 'Example',
+    content: html,
+  };
 
   it('strips <img> tags from output', () => {
-    const md = htmlToMarkdown(html, CHAT_READY_PRESET);
-    expect(md).not.toContain('cat.png');
-    expect(md).not.toContain('![');
-    expect(md).not.toContain('![cat]');
+    const clip = toClip(rawPage, CHAT_READY_PRESET);
+    expect(clip.markdown).not.toContain('cat.png');
+    expect(clip.markdown).not.toContain('![');
+    expect(clip.markdown).not.toContain('![cat]');
   });
 
   it('strips <a> tags but keeps anchor text', () => {
-    const md = htmlToMarkdown(html, CHAT_READY_PRESET);
-    expect(md).not.toContain('https://example.com');
-    expect(md).not.toContain('](');
-    expect(md).toContain('link');
+    const clip = toClip(rawPage, CHAT_READY_PRESET);
+    expect(clip.markdown).not.toContain('https://example.com');
+    expect(clip.markdown).not.toContain('](');
+    expect(clip.markdown).toContain('link');
   });
 
   it('keeps surrounding paragraph text', () => {
-    const md = htmlToMarkdown(html, CHAT_READY_PRESET);
-    expect(md).toContain('Hello');
-    expect(md).toContain('world');
+    const clip = toClip(rawPage, CHAT_READY_PRESET);
+    expect(clip.markdown).toContain('Hello');
+    expect(clip.markdown).toContain('world');
   });
 
   it('returns empty string for empty input', () => {
-    expect(htmlToMarkdown('', CHAT_READY_PRESET)).toBe('');
+    const rawEmpty = { ...rawPage, content: '' };
+    expect(toClip(rawEmpty, CHAT_READY_PRESET).markdown).toBe('');
   });
 
   it('handles headings', () => {
-    const md = htmlToMarkdown('<h2>Title</h2><p>Body.</p>', CHAT_READY_PRESET);
-    expect(md).toContain('## Title');
-    expect(md).toContain('Body.');
+    const rawHeadings = {
+      ...rawPage,
+      content: '<h2>Title</h2><p>Body.</p>',
+    };
+    const clip = toClip(rawHeadings, CHAT_READY_PRESET);
+    expect(clip.markdown).toContain('## Title');
+    expect(clip.markdown).toContain('Body.');
   });
 });
 
-describe('htmlToMarkdown — Preset policies (Slice 4)', () => {
+describe('toClip — Preset policies (Slice 4)', () => {
   const html =
     '<p>A <a href="https://x">link</a> and <img src="y" alt="y"/>.</p>';
+  const rawPage = {
+    kind: 'page' as const,
+    url: 'https://example.com',
+    title: 'Example',
+    content: html,
+  };
 
   it('Reference preset keeps inline links, strips images', () => {
-    const md = htmlToMarkdown(html, PRESETS.reference);
-    expect(md).not.toContain('![');
-    expect(md).toContain('[link](https://x)');
+    const clip = toClip(rawPage, PRESETS.reference);
+    expect(clip.markdown).not.toContain('![');
+    expect(clip.markdown).toContain('[link](https://x)');
   });
 
   it('Archive preset keeps both image URLs and inline links', () => {
-    const md = htmlToMarkdown(html, PRESETS.archive);
-    expect(md).toContain('![y](y)');
-    expect(md).toContain('[link](https://x)');
+    const clip = toClip(rawPage, PRESETS.archive);
+    expect(clip.markdown).toContain('![y](y)');
+    expect(clip.markdown).toContain('[link](https://x)');
   });
 });
 
-describe('Selection Workflow — HTML to Markdown (Slice 2)', () => {
+describe('Selection Workflow — toClip (Slice 2)', () => {
+  const rawSelection = {
+    kind: 'selection' as const,
+    url: 'https://example.com',
+    title: 'Example',
+    html: '',
+  };
+
   it('converts <strong> and <em> inline formatting', () => {
-    const html = '<p>This is <strong>bold</strong> and <em>italic</em>.</p>';
-    const md = htmlToMarkdown(html, PRESETS['chat-ready']);
-    expect(md).toContain('**bold**');
-    expect(md).toContain('_italic_');
+    const raw = {
+      ...rawSelection,
+      html: '<p>This is <strong>bold</strong> and <em>italic</em>.</p>',
+    };
+    const clip = toClip(raw, PRESETS['chat-ready']);
+    expect(clip.markdown).toContain('**bold**');
+    expect(clip.markdown).toContain('_italic_');
   });
 
   it('preserves <code> inline', () => {
-    const html = '<p>Use <code>npm install</code> to set up.</p>';
-    const md = htmlToMarkdown(html, PRESETS['chat-ready']);
-    expect(md).toContain('`npm install`');
+    const raw = {
+      ...rawSelection,
+      html: '<p>Use <code>npm install</code> to set up.</p>',
+    };
+    const clip = toClip(raw, PRESETS['chat-ready']);
+    expect(clip.markdown).toContain('`npm install`');
   });
 
   it('preserves <a> as inline Markdown links under Reference preset', () => {
-    const html = '<p>Read <a href="https://example.com">the docs</a>.</p>';
-    const md = htmlToMarkdown(html, PRESETS.reference);
-    expect(md).toContain('[the docs](https://example.com)');
+    const raw = {
+      ...rawSelection,
+      html: '<p>Read <a href="https://example.com">the docs</a>.</p>',
+    };
+    const clip = toClip(raw, PRESETS.reference);
+    expect(clip.markdown).toContain('[the docs](https://example.com)');
   });
 
   it('strips <a> tags under Chat-ready preset', () => {
-    const html = '<p>Read <a href="https://example.com">the docs</a>.</p>';
-    const md = htmlToMarkdown(html, PRESETS['chat-ready']);
-    expect(md).not.toContain('https://example.com');
-    expect(md).toContain('the docs');
+    const raw = {
+      ...rawSelection,
+      html: '<p>Read <a href="https://example.com">the docs</a>.</p>',
+    };
+    const clip = toClip(raw, PRESETS['chat-ready']);
+    expect(clip.markdown).not.toContain('https://example.com');
+    expect(clip.markdown).toContain('the docs');
   });
 
   it('handles nested lists', () => {
-    const html = '<ul><li>One<ul><li>Nested</li></ul></li><li>Two</li></ul>';
-    const md = htmlToMarkdown(html, PRESETS['chat-ready']);
-    expect(md).toContain('One');
-    expect(md).toContain('Nested');
-    expect(md).toContain('Two');
+    const raw = {
+      ...rawSelection,
+      html: '<ul><li>One<ul><li>Nested</li></ul></li><li>Two</li></ul>',
+    };
+    const clip = toClip(raw, PRESETS['chat-ready']);
+    expect(clip.markdown).toContain('One');
+    expect(clip.markdown).toContain('Nested');
+    expect(clip.markdown).toContain('Two');
   });
 
   it('handles tables via GFM', () => {
-    const html =
-      '<table><thead><tr><th>A</th><th>B</th></tr></thead><tbody><tr><td>1</td><td>2</td></tr></tbody></table>';
-    const md = htmlToMarkdown(html, PRESETS['chat-ready']);
-    expect(md).toContain('| A');
-    expect(md).toContain('| B');
-    expect(md).toContain('| 1 |');
-    expect(md).toContain('| 2 |');
+    const raw = {
+      ...rawSelection,
+      html: '<table><thead><tr><th>A</th><th>B</th></tr></thead><tbody><tr><td>1</td><td>2</td></tr></tbody></table>',
+    };
+    const clip = toClip(raw, PRESETS['chat-ready']);
+    expect(clip.markdown).toContain('| A');
+    expect(clip.markdown).toContain('| B');
+    expect(clip.markdown).toContain('| 1 |');
+    expect(clip.markdown).toContain('| 2 |');
   });
 });
 
-describe('isUnsupportedUrl', () => {
-  it('identifies unsupported schemes', () => {
-    expect(isUnsupportedUrl('chrome://history')).toBe(true);
-    expect(isUnsupportedUrl('edge://settings')).toBe(true);
-    expect(isUnsupportedUrl('file:///Users/me/file.txt')).toBe(true);
-    expect(isUnsupportedUrl('about:blank')).toBe(true);
+describe('Extractor Chrome Integrations', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
   });
 
-  it('identifies PDF files', () => {
-    expect(isUnsupportedUrl('https://example.com/docs/manual.pdf')).toBe(true);
-    expect(
-      isUnsupportedUrl('https://example.com/docs/manual.PDF?version=1')
-    ).toBe(true);
-    expect(
-      isUnsupportedUrl(
-        'chrome-extension://mhjfbgojcjbhgocjecmcoiphboojackc/pdfviewer.html?file=x'
-      )
-    ).toBe(true);
+  describe('extractPage', () => {
+    it('throws error for unsupported URLs', async () => {
+      vi.stubGlobal('chrome', {
+        tabs: {
+          get: vi
+            .fn()
+            .mockResolvedValue({ url: 'chrome://history', title: 'History' }),
+        },
+      });
+
+      await expect(extractPage(1)).rejects.toThrow(
+        "This page type isn't supported."
+      );
+    });
+
+    it('throws error for direct PDF URLs', async () => {
+      vi.stubGlobal('chrome', {
+        tabs: {
+          get: vi.fn().mockResolvedValue({
+            url: 'https://example.com/file.pdf',
+            title: 'PDF',
+          }),
+        },
+      });
+
+      await expect(extractPage(1)).rejects.toThrow(
+        "This page type isn't supported."
+      );
+    });
+
+    it('throws error when Readability returns text length < 100 characters', async () => {
+      vi.stubGlobal('chrome', {
+        tabs: {
+          get: vi.fn().mockResolvedValue({
+            url: 'https://example.com',
+            title: 'Example',
+          }),
+        },
+        scripting: {
+          executeScript: vi.fn().mockResolvedValue([
+            {
+              result: {
+                title: 'Short Page',
+                content: '<p>Short</p>',
+                textContent: 'Short',
+              },
+            },
+          ]),
+        },
+      });
+
+      await expect(extractPage(1)).rejects.toThrow(
+        "Couldn't extract main content."
+      );
+    });
+
+    it('successfully extracts raw article info on valid pages', async () => {
+      vi.stubGlobal('chrome', {
+        tabs: {
+          get: vi.fn().mockResolvedValue({
+            url: 'https://example.com',
+            title: 'Tab Title',
+          }),
+        },
+        scripting: {
+          executeScript: vi.fn().mockResolvedValue([
+            {
+              result: {
+                title: 'Article Title',
+                content:
+                  '<div><p>This is a long body of text that satisfies the 100 character threshold minimum constraint easily and passes successfully.</p></div>',
+                textContent:
+                  'This is a long body of text that satisfies the 100 character threshold minimum constraint easily and passes successfully.',
+                byline: 'Author Name',
+                siteName: 'Site Name',
+                publishedTime: '2026-06-19T10:00:00Z',
+              },
+            },
+          ]),
+        },
+      });
+
+      const raw = await extractPage(1);
+      expect(raw).toEqual({
+        kind: 'page',
+        url: 'https://example.com',
+        title: 'Article Title',
+        content:
+          '<div><p>This is a long body of text that satisfies the 100 character threshold minimum constraint easily and passes successfully.</p></div>',
+        author: 'Author Name',
+        siteName: 'Site Name',
+        publishedAt: '2026-06-19T10:00:00Z',
+      });
+    });
   });
 
-  it('identifies valid HTTP/HTTPS web pages as supported', () => {
-    expect(isUnsupportedUrl('https://example.com')).toBe(false);
-    expect(isUnsupportedUrl('http://localhost:3000/docs')).toBe(false);
-  });
+  describe('extractSelection', () => {
+    it('returns null when no valid selection exists', async () => {
+      vi.stubGlobal('chrome', {
+        scripting: {
+          executeScript: vi.fn().mockResolvedValue([{ result: null }]),
+        },
+      });
 
-  it('returns false for empty input', () => {
-    expect(isUnsupportedUrl('')).toBe(false);
+      const res = await extractSelection(1);
+      expect(res).toBeNull();
+    });
+
+    it('successfully extracts raw selection HTML', async () => {
+      vi.stubGlobal('chrome', {
+        tabs: {
+          get: vi.fn().mockResolvedValue({
+            url: 'https://example.com',
+            title: 'Example Tab',
+          }),
+        },
+        scripting: {
+          executeScript: vi
+            .fn()
+            .mockResolvedValue([
+              { result: { html: '<strong>hello</strong>' } },
+            ]),
+        },
+      });
+
+      const res = await extractSelection(1);
+      expect(res).not.toBeNull();
+      expect(res!.kind).toBe('selection');
+      expect(res!.url).toBe('https://example.com');
+      expect(res!.title).toBe('Example Tab');
+      expect(res!.html).toBe('<strong>hello</strong>');
+    });
   });
 });

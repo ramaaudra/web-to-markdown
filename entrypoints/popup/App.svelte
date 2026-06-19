@@ -3,7 +3,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
-  import { htmlToMarkdown, isUnsupportedUrl } from '~/lib/extractor';
+  import { extractPage, toClip } from '~/lib/extractor';
+  import type { RawPageData } from '~/lib/extractor';
   import { writeClipboard } from '~/lib/clipboard';
   import { PRESETS } from '~/lib/presets';
   import { formatClip } from '~/lib/frontmatter';
@@ -22,29 +23,14 @@
   let frontmatterEnabled = $state(true);
 
   // Cached page extraction raw data
-  let rawArticle = $state<any>(null);
-  let tabUrl = $state('');
-  let tabTitle = $state('');
-  let fetchedAt = $state('');
+  let rawData = $state<RawPageData | null>(null);
 
   // Active preset selection
   let activePresetId = $state<PresetId>('chat-ready');
   const activePreset = $derived(PRESETS[activePresetId]);
 
   // Derived page clip object
-  const clip = $derived.by(() => {
-    if (!rawArticle) return null;
-    return {
-      kind: 'page' as const,
-      url: tabUrl,
-      title: rawArticle.title || tabTitle || tabUrl,
-      siteName: rawArticle.siteName ?? undefined,
-      author: rawArticle.byline ?? undefined,
-      publishedAt: rawArticle.publishedTime ?? undefined,
-      markdown: htmlToMarkdown(rawArticle.content || '', activePreset),
-      fetchedAt,
-    };
-  });
+  const clip = $derived(rawData ? toClip(rawData, activePreset) : null);
 
   // Derived formatted Markdown text and token count
   const formattedClipText = $derived(clip ? formatClip(clip, activePreset, { frontmatterEnabled }) : '');
@@ -74,40 +60,16 @@
       if (!tab?.id) {
         throw new Error('No active tab.');
       }
-      tabUrl = tab.url ?? '';
-      tabTitle = tab.title ?? '';
-      fetchedAt = new Date().toISOString();
 
-      // 2. Unsupported page detection
-      if (isUnsupportedUrl(tabUrl)) {
-        status = 'error';
-        errorText = "This page type isn't supported.";
-        return;
-      }
-
-      // Execute script once to get RawArticle
-      const results = await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        files: ['/content-scripts/extract-page.js'],
-        world: 'ISOLATED',
-      });
-      rawArticle = results?.[0]?.result;
-      
-      // 3. Readability content and text content length check (threshold < 100)
-      if (!rawArticle || !rawArticle.content || !rawArticle.textContent || rawArticle.textContent.trim().length < 100) {
-        status = 'error';
-        errorText = "Couldn't extract main content. The page might use heavy JavaScript rendering. Try the selection option instead.";
-        return;
-      }
+      // Extract raw page data via the extractor module
+      rawData = await extractPage(tab.id);
 
       // Format and copy the default/saved preset
       await copyCurrentClip(true);
       status = 'ready';
     } catch (e) {
       status = 'error';
-      if (!errorText) {
-        errorText = e instanceof Error ? e.message : 'Failed to extract page.';
-      }
+      errorText = e instanceof Error ? e.message : 'Failed to extract page.';
     }
   });
 

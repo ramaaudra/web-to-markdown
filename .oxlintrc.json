@@ -8,6 +8,7 @@
     "style": "warn"
   },
   "rules": {
+    "no-duplicate-imports": "off",
     "unicorn/require-module-specifiers": "off",
     "unicorn/filename-case": "off",
     "unicorn/catch-error-name": "off",
