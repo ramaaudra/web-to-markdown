@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# WXT build output + cache
+.output/
+.wxt/
+dist/
+
+# Test coverage
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Built extension archives (Chrome Web Store uploads)
+*.zip
