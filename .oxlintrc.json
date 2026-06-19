@@ -1,0 +1,39 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "import", "vitest"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "error",
+    "style": "warn"
+  },
+  "rules": {
+    "unicorn/require-module-specifiers": "off",
+    "unicorn/filename-case": "off",
+    "unicorn/catch-error-name": "off",
+    "no-underscore-dangle": "off",
+    "import/no-named-export": "off",
+    "import/group-exports": "off",
+    "import/no-nodejs-modules": "off",
+    "import/exports-last": "off",
+    "vitest/require-mock-type-parameters": "off",
+    "vitest/prefer-expect-assertions": "off",
+    "vitest/prefer-lowercase-title": "off",
+    "vitest/prefer-to-be-falsy": "off",
+    "vitest/prefer-to-be-truthy": "off",
+    "vitest/require-hook": "off",
+    "sort-keys": "off",
+    "func-style": "off",
+    "sort-imports": "off",
+    "curly": "off",
+    "prefer-const": "off",
+    "capitalized-comments": "off",
+    "no-magic-numbers": "off",
+    "id-length": "off",
+    "prefer-destructuring": "off",
+    "max-statements": "off"
+  },
+  "env": {
+    "builtin": true
+  }
+}

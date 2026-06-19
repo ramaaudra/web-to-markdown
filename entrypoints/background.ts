@@ -1,10 +1,14 @@
-import { defineBackground } from 'wxt/utils/define-background';
-import { registerContextMenus, COPY_SELECTION_MENU_ID } from '~/lib/context-menu';
-import { extractSelection } from '~/lib/extractor';
-import { writeClipboard } from '~/lib/clipboard';
-import { showToast } from '~/lib/toast';
-import { CHAT_READY_PRESET } from '~/lib/presets';
-import { formatClip } from '~/lib/frontmatter';
+import { defineBackground } from "wxt/utils/define-background";
+import {
+  registerContextMenus,
+  COPY_SELECTION_MENU_ID,
+} from "~/lib/context-menu";
+import { extractSelection } from "~/lib/extractor";
+import { writeClipboard } from "~/lib/clipboard";
+import { showToast } from "~/lib/toast";
+import { PRESETS } from "~/lib/presets";
+import { formatClip } from "~/lib/frontmatter";
+import { getSettings } from "~/lib/storage";
 
 export default defineBackground(() => {
   registerContextMenus();
@@ -14,27 +18,29 @@ export default defineBackground(() => {
     if (!tab?.id) return;
 
     try {
-      const clip = await extractSelection(tab.id, CHAT_READY_PRESET);
+      const settings = await getSettings();
+      const preset = PRESETS[settings.lastUsedPreset] || PRESETS["chat-ready"];
+
+      const clip = await extractSelection(tab.id, preset);
       if (!clip) {
-        await showToast(tab.id, 'Select some text first.');
+        await showToast(tab.id, "Select some text first.");
         return;
       }
-      const formatted = formatClip(clip, CHAT_READY_PRESET);
+      const formatted = formatClip(clip, preset, {
+        frontmatterEnabled: settings.frontmatterEnabled,
+      });
       await writeClipboard(formatted);
-      await showToast(tab.id, 'Copied!');
+      await showToast(tab.id, "Copied!");
     } catch (err) {
-      console.error('[webtomd] selection workflow failed', err);
-      await showToast(
-        tab.id,
-        err instanceof Error ? err.message : "Couldn't write to clipboard.",
-      );
+      console.error("[webtomd] selection workflow failed", err);
+      await showToast(tab.id, "Couldn't write to clipboard.");
     }
   });
 
   chrome.runtime.onInstalled.addListener((details) => {
-    console.log('[webtomd] installed', details.reason);
-    if (details.reason === 'install') {
-      chrome.tabs.create({ url: chrome.runtime.getURL('welcome.html') });
+    console.log("[webtomd] installed", details.reason);
+    if (details.reason === "install") {
+      chrome.tabs.create({ url: chrome.runtime.getURL("welcome.html") });
     }
   });
 });

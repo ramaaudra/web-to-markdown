@@ -3,8 +3,8 @@
 // Composes the final text block copied to the clipboard based on the active Preset.
 // Pure functions — primary test seam for Slice 3.
 
-import type { WebClip } from '~/types/clip';
-import type { Preset } from '~/types/preset';
+import type { WebClip } from "~/types/clip";
+import type { Preset } from "~/types/preset";
 
 export interface FrontmatterMeta {
   url: string;
@@ -32,8 +32,8 @@ export function formatPublicationDate(dateStr: string): string | undefined {
   if (!isNaN(parsed)) {
     const date = new Date(parsed);
     const yyyy = date.getFullYear();
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const dd = String(date.getDate()).padStart(2, '0');
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
     return `${yyyy}-${mm}-${dd}`;
   }
 
@@ -46,10 +46,10 @@ export function formatPublicationDate(dateStr: string): string | undefined {
  */
 export function serializeYamlValue(val: string): string {
   const needsQuoting =
-    val === '' ||
+    val === "" ||
     val.includes('"') ||
     val.includes("'") ||
-    val.includes('\\') ||
+    val.includes("\\") ||
     /^[ \t]|[ \t]$/.test(val) || // leading/trailing spaces
     /[\n\r]/.test(val) || // newlines
     /[:\s]#/.test(val) || // comments
@@ -69,7 +69,7 @@ export function serializeYamlValue(val: string): string {
  * Omit optional fields that are not provided.
  */
 export function serializeFrontmatter(meta: FrontmatterMeta): string {
-  const lines: string[] = ['---'];
+  const lines: string[] = ["---"];
 
   // Required fields
   lines.push(`url: ${serializeYamlValue(meta.url)}`);
@@ -77,37 +77,47 @@ export function serializeFrontmatter(meta: FrontmatterMeta): string {
   lines.push(`fetched_at: ${serializeYamlValue(meta.fetched_at)}`);
 
   // Optional fields
-  if (meta.date !== undefined && meta.date !== null && meta.date !== '') {
+  if (meta.date !== undefined && meta.date !== null && meta.date !== "") {
     const formatted = formatPublicationDate(meta.date);
     if (formatted) {
       lines.push(`date: ${serializeYamlValue(formatted)}`);
     }
   }
 
-  if (meta.author !== undefined && meta.author !== null && meta.author !== '') {
+  if (meta.author !== undefined && meta.author !== null && meta.author !== "") {
     lines.push(`author: ${serializeYamlValue(meta.author)}`);
   }
 
-  if (meta.site_name !== undefined && meta.site_name !== null && meta.site_name !== '') {
+  if (
+    meta.site_name !== undefined &&
+    meta.site_name !== null &&
+    meta.site_name !== ""
+  ) {
     lines.push(`site_name: ${serializeYamlValue(meta.site_name)}`);
   }
 
-  lines.push('---');
-  return lines.join('\n');
+  lines.push("---");
+  return lines.join("\n");
 }
 
 /**
  * Pure composition function. Prepends YAML frontmatter when the Preset requests it.
  */
-export function formatClip(clip: WebClip, preset: Preset): string {
-  if (preset.frontmatter) {
+export function formatClip(
+  clip: WebClip,
+  preset: Preset,
+  options?: { frontmatterEnabled?: boolean }
+): string {
+  const showFrontmatter =
+    preset.frontmatter && (options?.frontmatterEnabled ?? true);
+  if (showFrontmatter) {
     const meta: FrontmatterMeta = {
       url: clip.url,
       title: clip.title,
       fetched_at: clip.fetchedAt,
     };
 
-    if (clip.kind === 'page') {
+    if (clip.kind === "page") {
       if (clip.publishedAt) {
         meta.date = clip.publishedAt;
       }
@@ -119,7 +129,7 @@ export function formatClip(clip: WebClip, preset: Preset): string {
       }
     }
 
-    return serializeFrontmatter(meta) + '\n' + clip.markdown;
+    return serializeFrontmatter(meta) + "\n" + clip.markdown;
   }
 
   return clip.markdown;
