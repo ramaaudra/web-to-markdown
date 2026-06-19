@@ -13,6 +13,7 @@
 // and a Preset and returns Markdown. Slice 1's test seam.
 
 import TurndownService from 'turndown';
+import { gfm } from 'turndown-plugin-gfm';
 import type { PageClip, SelectionClip } from '~/types/clip';
 import type { Preset } from '~/types/preset';
 
@@ -127,6 +128,7 @@ export function htmlToMarkdown(html: string, preset: Preset): string {
     bulletListMarker: '-',
     emDelimiter: '_',
   });
+  td.use(gfm);
 
   if (preset.imagePolicy === 'strip') {
     td.addRule('strip-images', {

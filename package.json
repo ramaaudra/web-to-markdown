@@ -21,6 +21,7 @@
     "@wxt-dev/module-svelte": "^2.0.0",
     "svelte": "^5.0.0",
     "turndown": "^7.2.0",
+    "turndown-plugin-gfm": "^1.0.2",
     "wxt": "^0.20.0"
   },
   "devDependencies": {

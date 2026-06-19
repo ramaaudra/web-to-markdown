@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { htmlToMarkdown } from '~/lib/extractor';
 import { CHAT_READY_PRESET, PRESETS } from '~/lib/presets';
 
-describe('htmlToMarkdown (Chat-ready preset — Slice 1)', () => {
+describe('htmlToMarkdown — Chat-ready preset (Slice 1)', () => {
   const html =
     '<p>Hello <a href="https://example.com">link</a> <img src="cat.png" alt="cat"/> world.</p>';
 
@@ -37,7 +37,7 @@ describe('htmlToMarkdown (Chat-ready preset — Slice 1)', () => {
   });
 });
 
-describe('htmlToMarkdown (Preset policies)', () => {
+describe('htmlToMarkdown — Preset policies (Slice 4)', () => {
   const html = '<p>A <a href="https://x">link</a> and <img src="y" alt="y"/>.</p>';
 
   it('Reference preset keeps inline links, strips images', () => {
@@ -50,5 +50,51 @@ describe('htmlToMarkdown (Preset policies)', () => {
     const md = htmlToMarkdown(html, PRESETS.archive);
     expect(md).toContain('![y](y)');
     expect(md).toContain('[link](https://x)');
+  });
+});
+
+describe('Selection Workflow — HTML to Markdown (Slice 2)', () => {
+  it('converts <strong> and <em> inline formatting', () => {
+    const html = '<p>This is <strong>bold</strong> and <em>italic</em>.</p>';
+    const md = htmlToMarkdown(html, PRESETS['chat-ready']);
+    expect(md).toContain('**bold**');
+    expect(md).toContain('_italic_');
+  });
+
+  it('preserves <code> inline', () => {
+    const html = '<p>Use <code>npm install</code> to set up.</p>';
+    const md = htmlToMarkdown(html, PRESETS['chat-ready']);
+    expect(md).toContain('`npm install`');
+  });
+
+  it('preserves <a> as inline Markdown links under Reference preset', () => {
+    const html = '<p>Read <a href="https://example.com">the docs</a>.</p>';
+    const md = htmlToMarkdown(html, PRESETS.reference);
+    expect(md).toContain('[the docs](https://example.com)');
+  });
+
+  it('strips <a> tags under Chat-ready preset', () => {
+    const html = '<p>Read <a href="https://example.com">the docs</a>.</p>';
+    const md = htmlToMarkdown(html, PRESETS['chat-ready']);
+    expect(md).not.toContain('https://example.com');
+    expect(md).toContain('the docs');
+  });
+
+  it('handles nested lists', () => {
+    const html = '<ul><li>One<ul><li>Nested</li></ul></li><li>Two</li></ul>';
+    const md = htmlToMarkdown(html, PRESETS['chat-ready']);
+    expect(md).toContain('One');
+    expect(md).toContain('Nested');
+    expect(md).toContain('Two');
+  });
+
+  it('handles tables via GFM', () => {
+    const html =
+      '<table><thead><tr><th>A</th><th>B</th></tr></thead><tbody><tr><td>1</td><td>2</td></tr></tbody></table>';
+    const md = htmlToMarkdown(html, PRESETS['chat-ready']);
+    expect(md).toContain('| A');
+    expect(md).toContain('| B');
+    expect(md).toContain('| 1 |');
+    expect(md).toContain('| 2 |');
   });
 });
