@@ -39,5 +39,3 @@ export const PRESET_ORDER: readonly PresetId[] = [
   'reference',
   'archive',
 ] as const;
-
-export const DEFAULT_PRESET_ID: PresetId = 'chat-ready';

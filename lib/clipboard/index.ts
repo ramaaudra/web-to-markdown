@@ -1,13 +1,26 @@
+import { scriptTarget } from '~/lib/chrome/script-target';
+
 // lib/clipboard — write text to the system clipboard.
 //
-// Used by both the popup (auto-copy on open / tab switch) and the background
-// service worker (Selection Workflow). Tries the modern async Clipboard API
-// first (extension contexts have user activation by virtue of the user
-// gesture — icon click or context-menu click — so this should work without a
-// fallback in practice). Falls back to `document.execCommand('copy')` if the
-// async API is unavailable (e.g., older browsers).
+// The popup writes from an extension page (document + Clipboard API). The
+// Selection Workflow writes via the active tab because MV3 service workers
+// often lack `document` and may not expose `navigator.clipboard` even with
+// `clipboardWrite` — injecting into the tab is the reliable path.
 
-export async function writeClipboard(text: string): Promise<void> {
+export interface WriteClipboardOptions {
+  tabId?: number;
+  frameId?: number;
+}
+
+export async function writeClipboard(
+  text: string,
+  options: WriteClipboardOptions = {}
+): Promise<void> {
+  if (options.tabId != null) {
+    await writeClipboardInTab(text, options.tabId, options.frameId);
+    return;
+  }
+
   if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(text);
     return;
@@ -16,7 +29,22 @@ export async function writeClipboard(text: string): Promise<void> {
     fallbackCopy(text);
     return;
   }
-  throw new Error('Clipboard API is not available in service worker context');
+  throw new Error('Clipboard API is not available in this context');
+}
+
+export async function writeClipboardInTab(
+  text: string,
+  tabId: number,
+  frameId?: number
+): Promise<void> {
+  await chrome.scripting.executeScript({
+    target: scriptTarget(tabId, frameId),
+    func: async (value: string) => {
+      await navigator.clipboard.writeText(value);
+    },
+    args: [text],
+    world: 'ISOLATED',
+  });
 }
 
 function fallbackCopy(text: string): void {

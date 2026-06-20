@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { extractPage, extractSelection, toClip } from '~/lib/extractor';
+import { extractPage, toClip } from '~/lib/extractor';
+import { resolveSelectionHtml } from '~/lib/selection-workflow/resolve-selection-html';
 import { CHAT_READY_PRESET, PRESETS } from '~/lib/presets';
+import { stubChromeForSelectionExtract } from './helpers/chrome';
 
 describe('toClip — Chat-ready preset (Slice 1)', () => {
   const html =
@@ -242,25 +244,73 @@ describe('Extractor Chrome Integrations', () => {
     });
   });
 
-  describe('extractSelection', () => {
+  describe('resolveSelectionHtml', () => {
     it('returns null when no valid selection exists', async () => {
       vi.stubGlobal('chrome', {
+        storage: {
+          session: { get: vi.fn().mockResolvedValue({}), remove: vi.fn() },
+        },
         scripting: {
           executeScript: vi.fn().mockResolvedValue([{ result: null }]),
         },
       });
 
-      const res = await extractSelection(1);
+      const res = await resolveSelectionHtml(1);
       expect(res).toBeNull();
     });
 
-    it('successfully extracts raw selection HTML', async () => {
+    it('falls back to selectionText when live HTML is gone', async () => {
+      stubChromeForSelectionExtract(null);
+
+      const res = await resolveSelectionHtml(1, {
+        selectionText: 'hello\n\nworld',
+      });
+
+      expect(res).not.toBeNull();
+      expect(res!.html).toContain('hello');
+      expect(res!.html).toContain('world');
+      expect(res!.kind).toBe('selection');
+    });
+
+    it('prefers cached HTML over plain-text fallback', async () => {
+      const key = 'webtomd-selection-cache:1:0';
       vi.stubGlobal('chrome', {
         tabs: {
           get: vi.fn().mockResolvedValue({
             url: 'https://example.com',
             title: 'Example Tab',
           }),
+        },
+        storage: {
+          session: {
+            get: vi
+              .fn()
+              .mockResolvedValue({ [key]: '<strong>cached</strong>' }),
+            remove: vi.fn().mockResolvedValue(undefined),
+          },
+        },
+        scripting: {
+          executeScript: vi.fn().mockResolvedValue([{ result: null }]),
+        },
+      });
+
+      const res = await resolveSelectionHtml(1, {
+        selectionText: 'plain only',
+      });
+
+      expect(res!.html).toBe('<strong>cached</strong>');
+    });
+
+    it('successfully resolves raw selection HTML', async () => {
+      vi.stubGlobal('chrome', {
+        tabs: {
+          get: vi.fn().mockResolvedValue({
+            url: 'https://example.com',
+            title: 'Example Tab',
+          }),
+        },
+        storage: {
+          session: { get: vi.fn().mockResolvedValue({}), remove: vi.fn() },
         },
         scripting: {
           executeScript: vi
@@ -271,7 +321,7 @@ describe('Extractor Chrome Integrations', () => {
         },
       });
 
-      const res = await extractSelection(1);
+      const res = await resolveSelectionHtml(1);
       expect(res).not.toBeNull();
       expect(res!.kind).toBe('selection');
       expect(res!.url).toBe('https://example.com');
