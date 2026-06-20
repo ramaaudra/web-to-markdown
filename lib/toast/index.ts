@@ -5,10 +5,13 @@
 // after a configurable timeout; cleans up on its own.
 
 const TOAST_HOST_ID = 'webtomd-toast-host';
+const DEFAULT_DURATION_MS = 2500;
 
-interface ShowToastOptions {
-  /** Auto-dismiss timeout in milliseconds. Default 2000. */
+export interface ShowToastOptions {
+  /** Auto-dismiss timeout in milliseconds. Default 2500. */
   durationMs?: number;
+  /** Estimated token count shown as a subline on success toasts. */
+  tokenCount?: number;
 }
 
 /**
@@ -20,11 +23,12 @@ export async function showToast(
   message: string,
   options: ShowToastOptions = {}
 ): Promise<void> {
-  const durationMs = options.durationMs ?? 2000;
+  const durationMs = options.durationMs ?? DEFAULT_DURATION_MS;
+  const tokenCount = options.tokenCount;
   await chrome.scripting.executeScript({
     target: { tabId },
     func: injectToast,
-    args: [message, durationMs],
+    args: [message, durationMs, tokenCount ?? null],
     world: 'ISOLATED',
   });
 }
@@ -45,9 +49,13 @@ interface ToastHost extends HTMLDivElement {
   __shadowRoot: ShadowRoot;
 }
 
-function injectToast(message: string, durationMs: number): void {
+function injectToast(
+  message: string,
+  durationMs: number,
+  tokenCount: number | null
+): void {
   const host = ensureHost();
-  renderToast(host, message);
+  renderToast(host, message, tokenCount);
   window.setTimeout(() => fadeAndRemove(host), durationMs);
 }
 
@@ -58,8 +66,8 @@ function ensureHost(): ToastHost {
   const host = document.createElement('div') as ToastHost;
   host.id = TOAST_HOST_ID;
   host.style.position = 'fixed';
-  host.style.top = '16px';
-  host.style.right = '16px';
+  host.style.bottom = '20px';
+  host.style.right = '20px';
   host.style.zIndex = '2147483647';
   host.style.pointerEvents = 'none';
 
@@ -70,39 +78,87 @@ function ensureHost(): ToastHost {
   return host;
 }
 
-function renderToast(host: ToastHost, message: string): void {
+function renderToast(
+  host: ToastHost,
+  message: string,
+  tokenCount: number | null
+): void {
   const root = host.__shadowRoot;
   root.replaceChildren();
 
-  const toast = document.createElement('div');
-  toast.textContent = message;
-  toast.style.font =
-    "500 13px/1.4 ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
-  toast.style.color = '#ffffff';
-  toast.style.background = 'rgba(31, 35, 40, 0.94)';
-  toast.style.padding = '10px 14px';
-  toast.style.borderRadius = '8px';
-  toast.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.18)';
-  toast.style.pointerEvents = 'auto';
-  toast.style.maxWidth = '320px';
-  toast.style.wordBreak = 'break-word';
-  toast.style.opacity = '0';
-  toast.style.transition = 'opacity 160ms ease-out';
+  const style = document.createElement('style');
+  style.textContent = `
+    .toast {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: rgba(22, 26, 24, 0.82);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+      pointer-events: auto;
+      max-width: 280px;
+      opacity: 0;
+      transform: translateY(8px);
+      transition:
+        opacity 180ms ease-out,
+        transform 180ms ease-out;
+    }
 
+    .toast.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast.leaving {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    .toast-message {
+      font: 600 13px/1.4 ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+      color: oklch(0.72 0.14 155);
+    }
+
+    .toast-tokens {
+      font: 500 11px/1.4 ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+      color: oklch(0.62 0.02 155);
+    }
+  `;
+
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+
+  const messageEl = document.createElement('div');
+  messageEl.className = 'toast-message';
+  messageEl.textContent = message;
+  toast.appendChild(messageEl);
+
+  if (tokenCount !== null) {
+    const tokensEl = document.createElement('div');
+    tokensEl.className = 'toast-tokens';
+    tokensEl.textContent = `~${tokenCount.toLocaleString('en-US')} tokens`;
+    toast.appendChild(tokensEl);
+  }
+
+  root.appendChild(style);
   root.appendChild(toast);
 
   void toast.offsetWidth;
-  toast.style.opacity = '1';
+  toast.classList.add('visible');
 }
 
 function fadeAndRemove(host: ToastHost): void {
   const root = host.__shadowRoot;
-  const toast = root.firstElementChild as HTMLElement | null;
+  const toast = root.querySelector('.toast') as HTMLElement | null;
   if (!toast) {
     host.remove();
     return;
   }
-  toast.style.opacity = '0';
+  toast.classList.remove('visible');
+  toast.classList.add('leaving');
   window.setTimeout(() => {
     root.replaceChildren();
     host.remove();

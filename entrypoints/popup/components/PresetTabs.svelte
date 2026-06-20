@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { PRESETS, PRESET_ORDER } from '~/lib/presets';
   import type { PresetId } from '~/types/preset';
 
   let { activeId = $bindable(), onChange } = $props<{
@@ -6,122 +7,78 @@
     onChange?: (id: PresetId) => void;
   }>();
 
-  const tabs: { id: PresetId; label: string; description: string }[] = [
-    {
-      id: 'chat-ready',
-      label: 'Chat-ready',
-      description: 'AI chat',
-    },
-    {
-      id: 'reference',
-      label: 'Reference',
-      description: 'Citations',
-    },
-    {
-      id: 'archive',
-      label: 'Archive',
-      description: 'Full notes',
-    },
-  ];
+  const activePreset = $derived(PRESETS[activeId as PresetId]);
 
   function selectTab(id: PresetId) {
+    if (id === activeId) return;
     activeId = id;
-    if (onChange) {
-      onChange(id);
-    }
+    onChange?.(id);
   }
 </script>
 
-<div class="tabs-container" role="tablist" aria-label="Web clip presets">
-  <!-- Sliding active background pill -->
-  <div class="active-pill" class:pos-0={activeId === 'chat-ready'} class:pos-1={activeId === 'reference'} class:pos-2={activeId === 'archive'}></div>
-
-  {#each tabs as tab}
-    <button
-      type="button"
-      class="tab-btn"
-      class:active={activeId === tab.id}
-      onclick={() => selectTab(tab.id)}
-      title={tab.description}
-      role="tab"
-      aria-selected={activeId === tab.id}
-    >
-      <span class="label">{tab.label}</span>
-    </button>
-  {/each}
+<div class="preset-tabs">
+  <div class="tab-row" role="tablist" aria-label="Web clip presets">
+    {#each PRESET_ORDER as id}
+      {@const preset = PRESETS[id]}
+      <button
+        type="button"
+        class="tab-btn"
+        class:active={activeId === id}
+        onclick={() => selectTab(id)}
+        role="tab"
+        aria-selected={activeId === id}
+      >
+        {preset.label}
+      </button>
+    {/each}
+  </div>
+  <p class="preset-desc">{activePreset.description}</p>
 </div>
 
 <style>
-  .tabs-container {
-    position: relative;
+  .preset-tabs {
     display: flex;
-    background: #1e222b;
-    border: 1px solid #2d3343;
-    padding: 3px;
-    border-radius: 12px;
-    width: 100%;
-    box-sizing: border-box;
-    z-index: 1;
-    overflow: hidden;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .tab-row {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
   }
 
   .tab-btn {
-    position: relative;
     flex: 1;
-    background: transparent;
+    padding: 8px 4px 10px;
     border: none;
-    padding: 8px 12px;
-    font-family: 'Outfit', sans-serif;
-    font-size: 13px;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    background: transparent;
+    font-family: inherit;
+    font-size: 12px;
     font-weight: 500;
-    color: #94a3b8;
+    color: var(--muted);
     cursor: pointer;
-    text-align: center;
-    border-radius: 9px;
-    transition: color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 2;
-    outline: none;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    transition:
+      color 0.15s ease,
+      border-color 0.15s ease;
   }
 
   .tab-btn:hover {
-    color: #f1f5f9;
+    color: var(--fg);
   }
 
   .tab-btn.active {
-    color: #ffffff;
+    color: var(--fg);
     font-weight: 600;
+    border-bottom-color: var(--accent);
   }
 
-  .active-pill {
-    position: absolute;
-    top: 3px;
-    bottom: 3px;
-    left: 3px;
-    width: calc(33.333% - 4px);
-    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-    border-radius: 9px;
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 1;
-    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-  }
-
-  .pos-0 {
-    transform: translateX(0%);
-  }
-
-  .pos-1 {
-    transform: translateX(100%);
-    /* Adjust for padding gap */
-    transform: translateX(calc(100% + 2px));
-  }
-
-  .pos-2 {
-    transform: translateX(200%);
-    /* Adjust for padding gap */
-    transform: translateX(calc(200% + 4px));
+  .preset-desc {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--muted);
   }
 </style>

@@ -8,6 +8,7 @@ import { writeClipboard } from '~/lib/clipboard';
 import { showToast } from '~/lib/toast';
 import { PRESETS } from '~/lib/presets';
 import { formatClip } from '~/lib/frontmatter';
+import { estimateTokens } from '~/lib/token';
 import { getSettings } from '~/lib/storage';
 
 export default defineBackground(() => {
@@ -31,7 +32,9 @@ export default defineBackground(() => {
         frontmatterEnabled: settings.frontmatterEnabled,
       });
       await writeClipboard(formatted);
-      await showToast(tab.id, 'Copied!');
+      await showToast(tab.id, 'Selection copied', {
+        tokenCount: estimateTokens(formatted),
+      });
     } catch (err) {
       console.error('[webtomd] selection workflow failed', err);
       await showToast(tab.id, "Couldn't write to clipboard.");
