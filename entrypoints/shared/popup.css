@@ -32,11 +32,6 @@
   background: var(--surface);
 }
 
-.popup-brand-icon {
-  font-size: 15px;
-  line-height: 1;
-}
-
 .popup-brand-name {
   font-size: 14px;
   font-weight: 600;

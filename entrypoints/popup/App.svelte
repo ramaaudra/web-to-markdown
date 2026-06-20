@@ -115,7 +115,6 @@
 
 <div class="popup">
   <header class="popup-header">
-    <span class="popup-brand-icon" aria-hidden="true">⚡</span>
     <span class="popup-brand-name">WebToMD</span>
   </header>
 
