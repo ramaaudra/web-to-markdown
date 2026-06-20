@@ -1,3 +1,4 @@
 {
-  "*.{js,ts,svelte,json,css,md,html}": ["oxfmt", "oxlint --fix"]
+  "*.{js,ts,json,css,md,html}": ["oxfmt"],
+  "*.{js,ts,svelte,json,css,md,html}": ["oxlint --fix"]
 }

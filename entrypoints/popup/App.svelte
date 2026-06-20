@@ -179,8 +179,6 @@
 </div>
 
 <style>
-  @import '../shared/popup.css';
-
   .meta-skeleton {
     border-radius: 4px;
     background: linear-gradient(

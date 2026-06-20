@@ -13,8 +13,8 @@
   let presetSaved = $state(false);
   let outputSaved = $state(false);
 
-  let presetSavedTimer: ReturnType<typeof setTimeout> | undefined;
-  let outputSavedTimer: ReturnType<typeof setTimeout> | undefined;
+  let presetSavedTimer: ReturnType<typeof setTimeout> | undefined = undefined;
+  let outputSavedTimer: ReturnType<typeof setTimeout> | undefined = undefined;
 
   onMount(async () => {
     const settings = await getSettings();
