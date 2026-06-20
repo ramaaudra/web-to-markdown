@@ -23,20 +23,26 @@ Problem (3) is intentionally out of scope for v1.
 
 ## Status
 
-v1 scaffold. Folder structure, manifest, type definitions, and ADRs are in place. Logic lands in subsequent commits.
+v1 MVP is feature-complete. Load the unpacked build from `.output/chrome-mv3/` for local testing.
 
-See [`CONTEXT.md`](./CONTEXT.md) for the domain glossary and [`docs/adr/`](./docs/adr/) for the architectural decisions.
+See [`CONTEXT.md`](./CONTEXT.md) for the domain glossary, [`docs/adr/`](./docs/adr/) for architectural decisions, and [`docs/privacy-policy.md`](./docs/privacy-policy.md) for the privacy policy.
 
 ## Development
 
 ```sh
-pnpm install
-pnpm dev          # WXT dev server with HMR — load unpacked from .output/chrome-mv3
-pnpm build        # Production build to .output/
-pnpm zip          # Build + zip for Chrome Web Store upload
-pnpm test         # Vitest
-pnpm compile      # tsc --noEmit + svelte-check
+bun install
+bun dev          # WXT dev server with HMR — load unpacked from .output/chrome-mv3
+bun build        # Production build to .output/
+bun zip          # Build + zip for Chrome Web Store upload
+bun test         # Vitest
+bun compile      # tsc --noEmit + svelte-check
 ```
+
+## Chrome Web Store
+
+- **Category:** Productivity
+- **Single purpose:** Extract the main content of any webpage as token-efficient Markdown for pasting into AI agents.
+- **Privacy policy:** [`docs/privacy-policy.md`](./docs/privacy-policy.md) (publish this URL when submitting to the store)
 
 ## License
 
