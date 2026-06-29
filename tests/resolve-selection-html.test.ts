@@ -116,7 +116,9 @@ describe('resolveSelectionHtml', () => {
 
   it('returns null when no valid selection exists', async () => {
     vi.stubGlobal('chrome', {
-      storage: { session: { get: vi.fn().mockResolvedValue({}), remove: vi.fn() } },
+      storage: {
+        session: { get: vi.fn().mockResolvedValue({}), remove: vi.fn() },
+      },
       scripting: {
         executeScript: vi.fn().mockResolvedValue([{ result: null }]),
       },
@@ -134,7 +136,9 @@ describe('resolveSelectionHtml', () => {
           title: 'Example Tab',
         }),
       },
-      storage: { session: { get: vi.fn().mockResolvedValue({}), remove: vi.fn() } },
+      storage: {
+        session: { get: vi.fn().mockResolvedValue({}), remove: vi.fn() },
+      },
       scripting: {
         executeScript: vi.fn().mockResolvedValue([{ result: null }]),
       },
@@ -211,7 +215,9 @@ describe('resolveSelectionHtml', () => {
           title: 'Example Tab',
         }),
       },
-      storage: { session: { get: vi.fn().mockResolvedValue({}), remove: vi.fn() } },
+      storage: {
+        session: { get: vi.fn().mockResolvedValue({}), remove: vi.fn() },
+      },
       scripting: {
         executeScript: vi
           .fn()

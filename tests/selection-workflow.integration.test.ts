@@ -44,7 +44,10 @@ describe('handleCopySelectionClick — integration', () => {
               }
             ).__webtomd_convertHtml = htmlToMarkdown;
             if (opts.func) {
-              const [html, preset] = opts.args as [string, typeof PRESETS['chat-ready']];
+              const [html, preset] = opts.args as [
+                string,
+                (typeof PRESETS)['chat-ready'],
+              ];
               const convert = (
                 globalThis as typeof globalThis & {
                   __webtomd_convertHtml?: typeof htmlToMarkdown;
@@ -54,7 +57,11 @@ describe('handleCopySelectionClick — integration', () => {
             }
             return [];
           }
-          if (opts.func && typeof opts.args?.[0] === 'string' && opts.args.length === 1) {
+          if (
+            opts.func &&
+            typeof opts.args?.[0] === 'string' &&
+            opts.args.length === 1
+          ) {
             clipboardText = opts.args[0] as string;
             return [];
           }

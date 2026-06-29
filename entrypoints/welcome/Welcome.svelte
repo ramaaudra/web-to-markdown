@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import PageShell from '~/entrypoints/shared/PageShell.svelte';
   import { getSettings, setSettings } from '~/lib/storage';
 
   let ready = $state(false);
@@ -27,18 +28,10 @@
 
 <svelte:options runes={true} />
 
-<main class="page">
-  <div class="page-brand">
-    <span class="page-brand-icon" aria-hidden="true">⚡</span>
-    <span>WebToMD</span>
-  </div>
-
-  <h1 class="page-heading">Copy pages as clean Markdown</h1>
-  <p class="page-lede">
-    Extract the main content of any webpage as token-efficient Markdown — ready
-    to paste into your AI agent.
-  </p>
-
+<PageShell
+  heading="Copy pages as clean Markdown"
+  lede="Extract the main content of any webpage as token-efficient Markdown — ready to paste into your AI agent."
+>
   <p class="section-label">How it works</p>
   <ol class="bordered-list">
     <li>
@@ -92,7 +85,7 @@
     All extraction happens locally on your device. WebToMD does not collect
     data, send telemetry, or require an account.
   </footer>
-</main>
+</PageShell>
 
 <style>
   :global(body) {

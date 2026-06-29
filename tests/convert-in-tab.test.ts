@@ -21,7 +21,7 @@ describe('convertHtmlInTab', () => {
     });
 
     expect(markdown).toBe('**hello**');
-    expect(executeScript).toHaveBeenCalledOnce();
+    expect(executeScript).toHaveBeenCalledTimes(1);
     expect(executeScript).toHaveBeenCalledWith(
       expect.objectContaining({
         target: { tabId: 3 },
@@ -32,9 +32,7 @@ describe('convertHtmlInTab', () => {
   });
 
   it('targets iframe frames when frameId is set', async () => {
-    const executeScript = vi
-      .fn()
-      .mockResolvedValueOnce([{ result: 'hello' }]);
+    const executeScript = vi.fn().mockResolvedValueOnce([{ result: 'hello' }]);
 
     vi.stubGlobal('chrome', { scripting: { executeScript } });
 

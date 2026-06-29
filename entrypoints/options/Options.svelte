@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import PageShell from '~/entrypoints/shared/PageShell.svelte';
   import { getSettings, setSettings } from '~/lib/storage';
   import { PRESETS, PRESET_ORDER } from '~/lib/presets';
   import type { PresetId } from '~/types/preset';
@@ -65,17 +66,10 @@
 
 <svelte:options runes={true} />
 
-<main class="page">
-  <div class="page-brand">
-    <span class="page-brand-icon" aria-hidden="true">⚡</span>
-    <span>WebToMD</span>
-  </div>
-
-  <h1 class="page-heading">Settings</h1>
-  <p class="page-lede">
-    Choose your default Preset and output options. Changes save automatically.
-  </p>
-
+<PageShell
+  heading="Settings"
+  lede="Choose your default Preset and output options. Changes save automatically."
+>
   <section class="settings-section" aria-labelledby="preset-label">
     <div class="section-header">
       <p class="section-label" id="preset-label">Default Preset</p>
@@ -141,7 +135,7 @@
     v{version} ·
     <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">GitHub</a>
   </footer>
-</main>
+</PageShell>
 
 <style>
   :global(body) {
